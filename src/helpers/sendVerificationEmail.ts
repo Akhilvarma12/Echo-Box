@@ -1,6 +1,6 @@
 import {resend} from '@/lib/resend';
 // import {VerificationEmail} from '@/emails/VerificationEmail';
-import { ApiResponse } from '../../types/ApiResponse';
+import { ApiResponse } from '../types/ApiResponse';
 import VerificationEmail from '../../emails/VerificationEmail';
 
 export const sendVerificationEmail = async (email: string,
