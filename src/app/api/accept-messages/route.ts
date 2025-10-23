@@ -3,7 +3,6 @@ import { authOptions } from "../auth/[...nextauth]/options";
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/User";
 import { User } from "next-auth";
-import { success } from "zod";
 
 export async function POST(request: Request) {
   await dbConnect();
