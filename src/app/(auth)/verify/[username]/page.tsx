@@ -1,8 +1,5 @@
-'use  client'
-import React, { use } from 'react'
+'use client'
 import { useRouter,useParams } from 'next/navigation'
-import page from '../../sign-up/page'
-import { signUpSchema } from '@/schemas/signUpSchema'
 import { toast } from "sonner"
 import {  useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod';
