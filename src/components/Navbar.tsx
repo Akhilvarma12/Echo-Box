@@ -1,28 +1,33 @@
 'use client'
 
 import Link from "next/link"
-import { useSession,signOut } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { User } from "next-auth"
 import { Button } from "./ui/button"
 
 
 function Navbar() {
-  const {data:session} = useSession()
-  
-  const user=session?.user
+  const { data: session } = useSession()
+
+  const user = session?.user as User
 
   return (
-    <nav>
-      <div>
-        <a href="#"> Mystery Message</a>
+    <nav className="p-4 md:p-6 shadow-md bg-gray-900 text-white">
+      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
+        <a href="#" className="text-xl font-bold mb-4 md:mb-0"> Mystery Message</a>
         {
-          session ?(
+          session ? (
             <>
-            <span>welcome {user?.username || user?.email }</span>
-            <Button onClick={()=> signOut()}>Log out</Button>
+              <span className="mr-4">welcome {user?.username || user?.email}</span>
+              <Button className="w-full md:w-auto" onClick={() => signOut()}>Log out</Button>
             </>
-          ):(
-            <span>Please sign in</span>
+          ) : (
+            <>
+              <Link href="/sign-in">
+                <Button className="w-full md:w-auto">Log In</Button>
+              </Link>
+
+            </>
           )
         }
       </div>
