@@ -1,68 +1,110 @@
-import { NextAuthOptions } from "next-auth";
-import  CredentialsProvider  from "next-auth/providers/credentials";
+import { NextAuthOptions, User as NextAuthUser } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/dbConnect";
 import UserModel from "@/model/User";
-import { use } from "react";
-import { th } from "zod/locales";
+
+type CredentialsType = {
+  identifier: string;
+  password: string;
+};
 
 export const authOptions: NextAuthOptions = {
-    providers:[
-         CredentialsProvider({
-        name: "Credentials",
-        id: "credentials",
-        credentials: {
-            username: { label: "Email", type: "text" },
-            password: { label: "Password", type: "password" },
-        },
-        async authorize(credentials: any): Promise<any> {
-            await dbConnect();
-            try {
-                const user = await UserModel.findOne({ $or:[
-                    {email:credentials.identifier},
-                    {username:credentials.identifier}] 
-                })
-                if(!user?.isVerified){
-                    throw new Error("No user found with the given email or username");
-                }
-                const isPasswordCorrect=await bcrypt.compare(credentials.password, user.password);
-                if(!isPasswordCorrect){
-                    return user;
-                }else{
-                    throw new Error("Invalid password");
-                }
-            } catch (err :any) {
-                throw new Error(err);
-            }
-        }
-         })
-    ],
-    callbacks:{
-        async jwt({ token, user }) {
-            if (user) {
-                token._id = user._id?.toString();
-                token.isVerified = user.isVerified;
-                token.isAcceptingMessages = user.isAcceptingMessages;
-                token.username = user.username;
-            }
-            return token
-        },
-        async session({ session , token }) {
-            if(token){
-                session.user._id=token._id
-                session.user.isVerified=token.isVerified
-                session.user.isAcceptingMessages=token.isAcceptingMessages
-                session.user.username=token.username
-            }
-            return session
-        },
-    },
-    pages:{
-        signIn:"/sign-in",
-    },
-    session:{
-        strategy:"jwt"
-    },
-    secret:process.env.NEXTAUTH_SECRET,
-}
+  providers: [
+    CredentialsProvider({
+      id: "credentials",
+      name: "Credentials",
 
+      credentials: {
+        identifier: { label: "Email or Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+
+      async authorize(
+        credentials: CredentialsType | undefined
+      ): Promise<NextAuthUser | null> {
+        await dbConnect();
+
+        if (!credentials?.identifier || !credentials.password) {
+          throw new Error("Missing fields");
+        }
+
+        // Fetch password (select:false in schema)
+        const user = await UserModel.findOne({
+          $or: [
+            { email: credentials.identifier },
+            { username: credentials.identifier },
+          ],
+        }).select("+password");
+
+        if (!user) {
+          throw new Error("User not found");
+        }
+
+        if (!user.isVerified) {
+          throw new Error("Please verify your email before signing in");
+        }
+
+        const isPasswordCorrect = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!isPasswordCorrect) {
+          throw new Error("Invalid password");
+        }
+
+        // MUST match your extended next-auth types
+        return {
+          id: user.id.toString(),
+          _id: user.id.toString(),
+          email: user.email,
+          username: user.username,
+          isVerified: user.isVerified,
+          isAcceptingMessages: user.isAcceptingMessage,
+        };
+      },
+    }),
+  ],
+
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        const u = user as NextAuthUser & {
+          _id: string;
+          username: string;
+          isVerified: boolean;
+          isAcceptingMessages: boolean;
+        };
+
+        token.id = u.id;
+        token._id = u._id;
+        token.username = u.username;
+        token.isVerified = u.isVerified;
+        token.isAcceptingMessages = u.isAcceptingMessages;
+      }
+      return token;
+    },
+
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user._id = token._id as string;
+        session.user.username = token.username as string;
+        session.user.isVerified = token.isVerified as boolean;
+        session.user.isAcceptingMessages = token.isAcceptingMessages as boolean;
+      }
+      return session;
+    },
+  },
+
+  pages: {
+    signIn: "/sign-in",
+  },
+
+  session: {
+    strategy: "jwt",
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
+};

@@ -87,8 +87,12 @@ function Dashboard() {
       toast.error(axiosError.response?.data?.message || 'Something went wrong')
     }
   }
+  // Make sure session is loaded first
+if (!session || !session.user) {
+  return <div>Please sign in to access the dashboard.</div>;
+}
 
-  const {username} = session?.user as User;
+  const {username} = session?.user as User | {username: string};
   const baseUrl = `${window.location.protocol}//${window.location.host}`; 
   const profileUrl = `${baseUrl}/u/${username}`;
 
