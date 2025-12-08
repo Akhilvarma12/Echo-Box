@@ -12,46 +12,45 @@ export async function GET(request: Request) {
 
   if (!session || !user) {
     return Response.json(
-      {
-        success: false,
-        message: "Unauthorized",
-      },
+      { success: false, message: "Unauthorized" },
       { status: 401 }
     );
   }
-  const userId = new mongoose.Types.ObjectId(user.id);
+
+  const userId = new mongoose.Types.ObjectId(user._id); // FIX 1: Correct user id
+
   try {
-    const user = await UserModel.aggregate([
-      { $match: { id: userId } },
-      {$unwind : "$messages" },
-      {$sort: { "messages.createdAt": -1 } },
-      {$group:{_id:'$id', messages: { $push: "$messages" }}},
-    ]);
-    if(!user || user.length === 0){
-      return Response.json(
-        {
-          success: false,
-          message: "No messages found",
+    const result = await UserModel.aggregate([
+      { $match: { _id: userId } }, // FIX 2: Correct field
+      { $unwind: "$messages" },
+      { $sort: { "messages.createdAt": -1 } },
+      {
+        $group: {
+          _id: "$_id", // FIX 3: Correct field
+          messages: { $push: "$messages" },
         },
+      },
+    ]);
+
+    if (!result.length) {
+      return Response.json(
+        { success: false, message: "No messages found" },
         { status: 404 }
       );
     }
+
     return Response.json(
       {
         success: true,
-        messages: user[0].messages,
+        messages: result[0].messages,
       },
       { status: 200 }
     );
   } catch (error) {
-        console.log("An unexpected error occured ", error);
+    console.log("An unexpected error occurred", error);
     return Response.json(
-      {
-        success: false,
-        message: "Not authenticated",
-      },
+      { success: false, message: "Server error" },
       { status: 500 }
     );
   }
-
 }

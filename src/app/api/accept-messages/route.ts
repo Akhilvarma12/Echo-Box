@@ -7,7 +7,8 @@ import { User } from "next-auth";
 export async function POST(request: Request) {
   await dbConnect();
   const session = await getServerSession(authOptions);
-const user = session?.user as User | undefined;
+  const user = session?.user as User | undefined;
+
   if (!session || !user) {
     return Response.json(
       {
@@ -17,14 +18,17 @@ const user = session?.user as User | undefined;
       { status: 401 }
     );
   }
+
   const userId = user.id;
   const { acceptMessages } = await request.json();
+
   try {
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
-      { isAcceptingMessages: acceptMessages },
+      { isAcceptingMessage: acceptMessages },   // ✅ FIXED FIELD NAME
       { new: true }
     );
+
     if (!updatedUser) {
       return Response.json(
         {
@@ -58,7 +62,8 @@ const user = session?.user as User | undefined;
 export async function GET(request: Request) {
   await dbConnect();
   const session = await getServerSession(authOptions);
-const user = session?.user as User | undefined;
+  const user = session?.user as User | undefined;
+
   if (!session || !user) {
     return Response.json(
       {
@@ -68,7 +73,9 @@ const user = session?.user as User | undefined;
       { status: 401 }
     );
   }
+
   const userId = user.id;
+
   try {
     const foundUser = await UserModel.findById(userId);
     if (!foundUser) {
@@ -80,10 +87,11 @@ const user = session?.user as User | undefined;
         { status: 404 }
       );
     }
+
     return Response.json(
       {
         success: true,
-        isAcceptingMessages: foundUser.isAcceptingMessage,
+        isAcceptingMessage: foundUser.isAcceptingMessage,  // SAME FIELD EVERYWHERE
       },
       { status: 200 }
     );

@@ -33,19 +33,19 @@ function Dashboard() {
 
   const acceptMessages = watch("acceptMessages");
 
-  const fetchAcceptMessages = useCallback(async () => {
-    setIsSwitchLoading(true);
-    try {
-      const response = await axios.get<ApiResponse>('/api/accept-messages')
-      setValue("acceptMessages", response.data.isAcceptingMessages ?? false);
+const fetchAcceptMessages = useCallback(async () => {
+  setIsSwitchLoading(true);
+  try {
+    const response = await axios.get<ApiResponse>('/api/accept-messages')
+    setValue("acceptMessages", response.data.isAcceptingMessage ?? false); // ✅ FIXED
+  } catch (error) {
+    const axiosError = error as AxiosError<ApiResponse>;
+    toast.error(axiosError.response?.data?.message || 'Something went wrong')
+  } finally {
+    setIsSwitchLoading(false);
+  }
+}, [setValue])
 
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast.error(axiosError.response?.data?.message || 'Something went wrong')
-    } finally {
-      setIsSwitchLoading(false);
-    }
-  }, [setValue])
 
   const fetchMessages = useCallback(async (refresh: boolean = false) => {
     setIsLoading(true);
@@ -78,7 +78,7 @@ function Dashboard() {
   const handleSwitchChange = async () => {
       try {
       const response = await axios.post<ApiResponse>('/api/accept-messages',{
-        acceptMessage: !acceptMessages
+        acceptMessages  : !acceptMessages
       });  
       setValue("acceptMessages", !acceptMessages);
       toast.success(response.data.message);
